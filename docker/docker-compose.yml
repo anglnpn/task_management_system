@@ -1,0 +1,139 @@
+---
+version: "3.9"
+
+services:
+  task-management-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: task-management-app
+    hostname: task-management-app
+    restart: unless-stopped
+    command: >
+      sh -c " alembic -c src/alembic.ini upgrade head &&
+             alembic -c src/alembic.ini stamp head &&
+             python src/main.py --reload"
+    networks:
+      - home
+    env_file:
+      - ../src/.env
+    ports:
+      - 127.0.0.1:8000:8000
+    expose:
+      - 8000
+    volumes:
+      - ..:/app/
+      - ./healthchecks/core.sh:/healthcheck.sh
+      - city-volume:/app/src/dumps
+    healthcheck:
+      test: [ "CMD-SHELL", "./healthcheck.sh" ]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
+
+  db:
+    image: postgres:12.16-alpine3.18
+    hostname: task-management-db
+    container_name: task-management-db
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:5432:5432
+    expose:
+      - 5432
+    env_file:
+      - ../src/.env
+    environment:
+      PGDATA: /var/lib/postgresql/data/task_management_system/pgdata/
+      POSTGRES_DB: db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - apgdata:/var/lib/postgresql/data/task_management_system/pgdata/
+      - ./initdb:/docker-entrypoint-initdb.d
+      - city-volume:/app/src/dumps:ro
+    networks:
+      - home
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  redis:
+    image: redis:7.2.1-alpine3.18
+    container_name: task-management-redis
+    hostname: task-management-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1
+    ports:
+      - 127.0.0.1:6380:6379
+    volumes:
+      - redisstore:/data/
+    networks:
+      - home
+    healthcheck:
+      test: [ CMD, redis-cli, ping ]
+      interval: 10s
+      timeout: 60s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
+
+  task-management-celery-worker:
+    container_name: task-management-celery-worker
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    entrypoint: /app/src/celery-entrypoint.sh
+    env_file:
+      - ../src/.env
+    depends_on:
+      - redis
+    networks:
+      - home
+
+  task-management-celery-beat:
+    user: app:app
+    image: celery-beat
+    container_name: task-management-celery-beat
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    entrypoint: /app/src/celery-beat-entrypoint.sh
+    env_file:
+      - ../src/.env
+    networks:
+      - home
+    depends_on:
+      - redis
+      - task-management-celery-worker
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  home: {}
+volumes:
+  apgdata: {}
+  redisstore: {}
+  city-volume:
