@@ -1,5 +1,4 @@
 from .base import BaseCRUD
-from .bulk import BulkAsync
 from .create import CreateAsync
 from .delete import DeleteAsync
 from .read import ReadAsync
@@ -11,5 +10,4 @@ __all__ = [
     "UpdateAsync",
     "DeleteAsync",
     "BaseCRUD",
-    "BulkAsync",
 ]
