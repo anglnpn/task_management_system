@@ -45,5 +45,6 @@ class UserUpdateFullDB(UserUpdateFull):
 
 
 class UserResponse(UserBase):
+    id: int
     uid: UUID
     username: Optional[str] = None
