@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PositiveInt
 
 
 class JobBase(BaseModel):
     title: str
     description: str
-    author_id: int
-    performer_id: int
+    author_id: PositiveInt
+    performer_id: PositiveInt
 
     class Config:
         from_attributes = True
@@ -18,14 +18,14 @@ class JobBase(BaseModel):
 class JobCreate(BaseModel):
     title: str
     description: str
-    performer_id: int
+    performer_id: PositiveInt
     deadline: Optional[datetime] = None
 
 
 class JobCreateDB(JobBase):
     uid: UUID
-    author_id: int
-    performer_id: int
+    author_id: PositiveInt
+    performer_id: PositiveInt
     deadline: Optional[datetime] = None
 
 
@@ -33,7 +33,7 @@ class JobUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     deadline: Optional[datetime] = None
-    performer_id: Optional[int] = None
+    performer_id: Optional[PositiveInt] = None
     is_completed: Optional[bool] = None
     is_archived: Optional[bool] = None
 

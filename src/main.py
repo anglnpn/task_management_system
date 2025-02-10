@@ -5,11 +5,17 @@ from redis import asyncio as aioredis
 import uvicorn
 
 from fastapi import FastAPI
+from sqladmin import Admin
 from starlette.middleware.cors import CORSMiddleware
 
+from api.admin.admin import load_admin_site
+from api.admin.views.auth import AdminAuth
 from api.v1.router import router as v1_router
+from crud.user import crud_user
 from configs.config import app_settings, redis_settings
 from configs.loggers import logger
+from databases.database import async_engine, async_session
+from services.user import create_admin
 
 
 @asynccontextmanager
@@ -21,6 +27,15 @@ async def lifespan(app: FastAPI) -> AsyncContextManager[None]:
         decode_responses=True,
     )
     app.state.redis = redis_from_url
+
+    async with async_session() as db:
+        admin_exists = await crud_user.get_admin(db)
+        if not admin_exists:
+            logger.info("Admin not found, creating a new one...")
+            await create_admin(db)
+        else:
+            logger.info("Admin already exists, skipping creation.")
+
     yield
     logger.info("Shutdown redis connection")
     await redis_from_url.close()
@@ -46,7 +61,22 @@ def create_app() -> FastAPI:
     return app
 
 
+def connect_admin(app: FastAPI) -> None:
+    authentication_backend = AdminAuth(
+        secret_key=app_settings.SECRET_KEY_ADMIN
+    )
+    admin = Admin(
+        app,
+        async_engine,
+        title="task management",
+        base_url="/admin",
+        authentication_backend=authentication_backend,
+    )
+    load_admin_site(admin)
+
+
 app = create_app()
+connect_admin(app)
 
 if __name__ == "__main__":
     host = "0.0.0.0"  # noqa: S104

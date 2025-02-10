@@ -1,15 +1,15 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 from schemas.password import PasswordBase
 
 
 class UserBase(BaseModel):
-    first_name: str
-    second_name: str
-    email: str
+    first_name: str = Field(min_length=2, max_length=30)
+    second_name: str = Field(min_length=2, max_length=30)
+    email: EmailStr = Field(min_length=2)
 
     class Config:
         from_attributes = True
@@ -25,9 +25,13 @@ class UserCreateDB(UserBase):
     hashed_password: str
 
 
+class AdminCreateDB(UserCreateDB):
+    is_admin: bool = Field(default=True)
+
+
 class UserUpdate(UserBase):
-    first_name: Optional[str] = None
-    second_name: Optional[str] = None
+    first_name: Optional[str] = Field(None, min_length=2, max_length=30)
+    second_name: Optional[str] = Field(None, min_length=2, max_length=30)
     username: Optional[str] = Field(None, max_length=25, min_length=5)
 
 

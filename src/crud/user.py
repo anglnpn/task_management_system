@@ -23,5 +23,17 @@ class CRUDUser(BaseAsyncCRUD[User, UserCreateDB, UserUpdateDB]):
         result = await db.execute(statement)
         return result.scalars().first()
 
+    async def get_by_username(
+        self, db: AsyncSession, *, username: str
+    ) -> Optional[User]:
+        statement = select(self.model).where(self.model.username == username)
+        result = await db.execute(statement)
+        return result.scalars().first()
+
+    async def get_admin(self, db: AsyncSession) -> bool:
+        stmt = select(self.model).where(self.model.is_admin)
+        result = await db.execute(stmt)
+        return bool(result.fetchone())
+
 
 crud_user = CRUDUser(User)

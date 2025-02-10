@@ -35,7 +35,6 @@ async def create_user(
             detail=f"A user with this {create_data.email}, "
             f"already exists.",
         )
-
     return await user.create_user(db=db, create_data=create_data)
 
 
@@ -92,10 +91,8 @@ async def update_for_user(
     current_user: User = Depends(get_current_user),
 ):
     if found_user := await crud_user.get_by_uid(db=db, uid=current_user.uid):
-        return await crud_user.update(
-            db=db,
-            db_obj=found_user,
-            update_data=update_data,
+        return await user.update_user(
+            db=db, found_user=found_user, update_data=update_data
         )
 
 
@@ -111,9 +108,9 @@ async def update_for_admin(
     current_user: User = Depends(get_admin),
 ):
     if found_user := await crud_user.get_by_uid(db=db, uid=current_user.uid):
-        return await crud_user.update(
+        return await user.update_user(
             db=db,
-            db_obj=found_user,
+            found_user=found_user,
             update_data=update_data,
         )
     raise HTTPException(
@@ -133,3 +130,9 @@ async def delete_user(
         found_user.uid == current_user.uid or current_user.is_admin is True
     ):
         found_user.is_deleted = True
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"User {user_uid} not found or you"
+        f" don't have permission to delete this user.",
+    )

@@ -16,6 +16,7 @@ class AppSettings(BaseSetting):
     EXTERNAL_SERVICE_SCHEMA: str = "http"
     EXTERNAL_SERVICE_HOST: str
     EXTERNAL_SERVICE_PORT: int
+    SECRET_KEY_ADMIN: str = "default_secret"
 
     @property
     def full_url(self) -> str:

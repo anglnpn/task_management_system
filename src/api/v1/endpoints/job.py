@@ -30,16 +30,26 @@ async def create_job(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
-    uid = str(uuid.uuid4())
-    return await crud_job.create(
-        db=db,
-        create_schema=JobCreateDB(
-            uid=uid,
-            author_id=current_user.id,
-            **create_data.model_dump(exclude_unset=True),
+    try:
+        uid = str(uuid.uuid4())
+        new_job = await crud_job.create(
+            db=db,
+            create_schema=JobCreateDB(
+                uid=uid,
+                author_id=current_user.id,
+                **create_data.model_dump(exclude_unset=True),
+            ),
             commit=False,
-        ),
-    )
+        )
+        await db.commit()
+    except Exception as ex:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while creating the job.",
+        ) from ex
+
+    return new_job
 
 
 @router.get(
@@ -175,7 +185,6 @@ async def update_job_for_performer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job {job_uid} not found.",
         )
-
     if found_job.performer_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
