@@ -27,7 +27,7 @@ email-validator = "^2.2.0"
 jinja2 = "^3.1.5"
 sqladmin = "0.16.0"
 bcrypt = "4.0.1"
-httpx = "^0.28.1"
+httpx = "0.26"
 requests-oauthlib = "^2.0.0"
 authlib = "^1.4.1"
 flower = "^2.0.1"
@@ -48,3 +48,10 @@ fastapi-cache2 = "^0.2.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "src/"
+addopts = "-vv -p no:cacheprovider --disable-warnings"
+testpaths = ["tests/"]
+python_files = ["test_*.py"]
+asyncio_mode= "auto"

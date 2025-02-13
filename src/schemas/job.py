@@ -24,8 +24,6 @@ class JobCreate(BaseModel):
 
 class JobCreateDB(JobBase):
     uid: UUID
-    author_id: PositiveInt
-    performer_id: PositiveInt
     deadline: Optional[datetime] = None
 
 
@@ -48,6 +46,7 @@ class JobUpdateDB(JobUpdate):
 
 class JobResponse(JobCreate):
     uid: UUID
+    author_id: int
     created_at: datetime
     updated_at: datetime
     is_completed: Optional[bool] = None

@@ -17,7 +17,9 @@ class UpdateAsync(Generic[ModelType, UpdateSchemaType]):
         commit: bool = True,
     ) -> ModelType:
         if isinstance(update_data, BaseModel):
-            update_data = update_data.model_dump(exclude_unset=True)
+            update_data = update_data.model_dump(
+                exclude_unset=True, exclude_none=True
+            )
         stmt = (
             update(self.model)
             .where(self.model.id == db_obj.id)

@@ -29,10 +29,11 @@ class AdminCreateDB(UserCreateDB):
     is_admin: bool = Field(default=True)
 
 
-class UserUpdate(UserBase):
+class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=2, max_length=30)
     second_name: Optional[str] = Field(None, min_length=2, max_length=30)
     username: Optional[str] = Field(None, max_length=25, min_length=5)
+    email: Optional[EmailStr] = Field(None, min_length=2)
 
 
 class UserUpdateFull(UserUpdate):
@@ -52,3 +53,8 @@ class UserResponse(UserBase):
     id: int
     uid: UUID
     username: Optional[str] = None
+
+
+class UserForAdminResponse(UserResponse):
+    is_admin: bool
+    is_deleted: bool

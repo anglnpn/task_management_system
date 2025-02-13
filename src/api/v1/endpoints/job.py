@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from configs.loggers import logger
 from api.dependencies.database import get_async_db
-from api.dependencies.auth import get_current_user
+from api.dependencies.auth import get_current_user, get_admin
 from crud.job import crud_job
 from models.user import User
 from schemas.job import (
@@ -153,18 +153,13 @@ async def update_job_for_admin(
     job_uid: UUID,
     update_data: JobUpdate,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_admin),
 ):
     found_job = await crud_job.get_by_uid(db=db, uid=job_uid)
     if not found_job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job {job_uid} not found.",
-        )
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not permission to update this job",
         )
 
     return await crud_job.update(

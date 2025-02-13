@@ -1,12 +1,10 @@
-import string
 import uuid
-import random
 from typing import Union
 
 from slugify import slugify
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from configs.config import db_settings
+from configs.config import admin_settings
 from configs.loggers import logger
 from schemas.user import (
     UserCreateDB,
@@ -18,6 +16,7 @@ from schemas.user import (
 from security.password import hash_password
 from crud.user import crud_user
 from models import User
+from utilities.exceptions import UserNameExistError
 
 
 async def create_user(
@@ -53,16 +52,16 @@ async def create_user(
 
 async def create_admin(db: AsyncSession) -> User:
     try:
-        hashed_password = await hash_password(db_settings.POSTGRES_PASSWORD)
+        hashed_password = await hash_password(admin_settings.ADMIN_PASSWORD)
         user_created = await crud_user.create(
             db=db,
             create_schema=AdminCreateDB(
                 uid=str(uuid.uuid4()),
-                first_name="Admin",
-                second_name="Admin",
-                username=db_settings.POSTGRES_USER,
+                first_name=admin_settings.ADMIN_FIRST_NAME,
+                second_name=admin_settings.ADMIN_SECOND_NAME,
+                username=admin_settings.ADMIN_USERNAME,
                 hashed_password=hashed_password,
-                email="admin@gmail.com",
+                email=admin_settings.ADMIN_EMAIL,
                 is_admin=True,
             ),
             commit=False,
@@ -90,7 +89,7 @@ async def update_user(
             )
         ):
             ex = "Username already exists."
-            raise ValueError(ex)  # noqa: TRY301
+            raise UserNameExistError(ex)  # noqa: TRY301
 
         updated_user = await crud_user.update(
             db=db,
@@ -99,6 +98,10 @@ async def update_user(
             commit=False,
         )
         await db.commit()
+    except UserNameExistError as ex:
+        await db.rollback()
+        logger.exception(ex)
+        raise
     except Exception as ex:
         await db.rollback()
         logger.exception(ex)
@@ -113,11 +116,8 @@ async def generate_unique_username(
     full_name = f"{first_name} {second_name}"
     username = slugify(full_name, separator="_")
 
-    while True:
-        if await crud_user.check_for_user(db=db, slug=username):
-            return username
+    if not await crud_user.check_for_user(db=db, slug=username):
+        return username
 
-        random_chars = "".join(
-            random.choices(string.ascii_lowercase + string.digits, k=3)  # noqa: S311
-        )
-        username = f"{username}_{random_chars}"
+    unique_id = uuid.uuid4().hex[:6]
+    return f"{username}_{unique_id}"

@@ -1,0 +1,82 @@
+---
+version: "3.9"
+
+services:
+  task-management-tests:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: task-management-test
+    hostname: task-management-test
+    restart: unless-stopped
+    command: >
+      sh -c " alembic -c src/alembic.ini upgrade head &&
+             alembic -c src/alembic.ini stamp head &&
+             python src/main.py"
+    env_file:
+      - ../src/.env.tests
+    networks:
+      - home_tests
+    volumes:
+      - allure_results:/app/src/tests/allure/allure-results
+    ports:
+      - 127.0.0.1:8000:8000
+    expose:
+      - 8000
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
+    depends_on:
+      - db-tests
+      - redis-tests
+
+  db-tests:
+    image: postgres:12.16-alpine3.18
+    hostname: task-management-db-tests
+    container_name: task-management-db-tests
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:5435:5435
+    expose:
+      - 5435
+    env_file:
+      - ../src/.env.tests
+    environment:
+      POSTGRES_DB: tests_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    networks:
+      - home_tests
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d
+
+  redis-tests:
+    image: redis:7.2.1-alpine3.18
+    container_name: task-management-redis-tests
+    hostname: task-management-redis-tests
+    restart: unless-stopped
+    command: redis-server --save 60 1
+    ports:
+      - 127.0.0.1:6380:6380
+    volumes:
+      - redisstore_tests:/data/
+    networks:
+      - home_tests
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 60s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
+
+networks:
+  home_tests: {}
+volumes:
+  redisstore_tests: {}
+  allure_results: {}

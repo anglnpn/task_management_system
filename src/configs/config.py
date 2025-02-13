@@ -64,9 +64,18 @@ class LogSettings(BaseSetting):
     LOG_LEVEL: str = "DEBUG"
 
 
+class AdminSettings(BaseSetting):
+    ADMIN_FIRST_NAME: str = ("admin",)
+    ADMIN_SECOND_NAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin"
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_EMAIL: str = "admin@gmail.com"
+
+
 app_settings = AppSettings()
 db_settings = DBSettings()
 jwt_settings = JWTSettings()
 log_settings = LogSettings()
 redis_settings = RedisSetting()
 mail_settings = MailSettings()
+admin_settings = AdminSettings()

@@ -23,7 +23,7 @@ async def login(
     user_login: UserLogin, db: AsyncSession = Depends(get_async_db)
 ):
     found_user = await crud_user.get_by_email(db, email=user_login.email)
-    if not found_user:
+    if not found_user or found_user.is_deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User {user_login.email} not found.",
