@@ -47,6 +47,18 @@ class JWTSettings(BaseSetting):
     JWT_REFRESH_TOKEN_EXPIRES: int
 
 
+class MailSettings(BaseSetting):
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+
+
 class LogSettings(BaseSetting):
     LOG_FILE: str = "/logs/service.log"
     LOG_LEVEL: str = "DEBUG"
@@ -57,3 +69,4 @@ db_settings = DBSettings()
 jwt_settings = JWTSettings()
 log_settings = LogSettings()
 redis_settings = RedisSetting()
+mail_settings = MailSettings()

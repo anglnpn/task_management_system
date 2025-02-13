@@ -14,7 +14,7 @@ class CRUDUser(BaseAsyncCRUD[User, UserCreateDB, UserUpdateDB]):
             func.lower(self.model.username) == func.lower(slug)
         )
         result = await db.execute(stmt)
-        return bool(result.fetchone()) is False
+        return bool(result.fetchone())
 
     async def get_by_email(
         self, db: AsyncSession, *, email: str

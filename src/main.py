@@ -11,6 +11,7 @@ from starlette.middleware.cors import CORSMiddleware
 from api.admin.admin import load_admin_site
 from api.admin.views.auth import AdminAuth
 from api.v1.router import router as v1_router
+from cache import start_cache
 from crud.user import crud_user
 from configs.config import app_settings, redis_settings
 from configs.loggers import logger
@@ -27,6 +28,8 @@ async def lifespan(app: FastAPI) -> AsyncContextManager[None]:
         decode_responses=True,
     )
     app.state.redis = redis_from_url
+
+    await start_cache()
 
     async with async_session() as db:
         admin_exists = await crud_user.get_admin(db)

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import (
     func,
@@ -10,10 +10,13 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import expression
 
 from models.base import Base
+
+if TYPE_CHECKING:
+    from models.user import User
 
 
 class Job(Base):
@@ -21,7 +24,7 @@ class Job(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     uid: Mapped[uuid.UUID] = mapped_column(
-        UUID, unique=True, index=True, default=uuid.uuid4
+        UUID(as_uuid=True), unique=True, index=True, default=uuid.uuid4
     )
     title: Mapped[str]
     description: Mapped[str]
@@ -29,7 +32,7 @@ class Job(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     is_archived: Mapped[bool] = mapped_column(
         Boolean, server_default=expression.false()
@@ -45,6 +48,11 @@ class Job(Base):
     )
     performer_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("user.id", ondelete="CASCADE"), index=True
+    )
+
+    author: Mapped["User"] = relationship("User", foreign_keys=[author_id])
+    performer: Mapped["User"] = relationship(
+        "User", foreign_keys=[performer_id]
     )
 
     @property

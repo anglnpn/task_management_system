@@ -7,6 +7,7 @@ from slugify import slugify
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from configs.config import db_settings
+from configs.loggers import logger
 from schemas.user import (
     UserCreateDB,
     UserCreate,
@@ -42,8 +43,9 @@ async def create_user(
             commit=False,
         )
         await db.commit()
-    except Exception:
+    except Exception as ex:
         await db.rollback()
+        logger.exception(ex)
         raise
 
     return user_created
@@ -66,8 +68,9 @@ async def create_admin(db: AsyncSession) -> User:
             commit=False,
         )
         await db.commit()
-    except Exception:
+    except Exception as ex:
         await db.rollback()
+        logger.exception(ex)
         raise
 
     return user_created
@@ -96,8 +99,9 @@ async def update_user(
             commit=False,
         )
         await db.commit()
-    except Exception:
+    except Exception as ex:
         await db.rollback()
+        logger.exception(ex)
         raise
 
     return updated_user

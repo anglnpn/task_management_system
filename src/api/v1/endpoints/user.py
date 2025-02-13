@@ -2,6 +2,7 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies.database import get_async_db
@@ -19,25 +20,6 @@ from crud.user import crud_user
 router = APIRouter()
 
 
-@router.post(
-    "/",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_user(
-    create_data: UserCreate,
-    db: AsyncSession = Depends(get_async_db),
-):
-    found_user = await crud_user.get_by_email(db, email=create_data.email)
-    if found_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A user with this {create_data.email}, "
-            f"already exists.",
-        )
-    return await user.create_user(db=db, create_data=create_data)
-
-
 @router.get(
     "/",
     response_model=UserResponse,
@@ -53,6 +35,7 @@ async def get_account_for_user(
     "/all/",
     response_model=List[UserResponse],
 )
+@cache(expire=60)
 async def get_all_users(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
@@ -78,6 +61,25 @@ async def get_user_by_uid(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"User {user_uid} not found.",
     )
+
+
+@router.post(
+    "/",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_user(
+    create_data: UserCreate,
+    db: AsyncSession = Depends(get_async_db),
+):
+    found_user = await crud_user.get_by_email(db, email=create_data.email)
+    if found_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A user with this {create_data.email}, "
+            f"already exists.",
+        )
+    return await user.create_user(db=db, create_data=create_data)
 
 
 @router.patch(

@@ -3,8 +3,10 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from configs.loggers import logger
 from api.dependencies.database import get_async_db
 from api.dependencies.auth import get_current_user
 from crud.job import crud_job
@@ -20,43 +22,12 @@ from schemas.job import (
 router = APIRouter()
 
 
-@router.post(
-    "/",
-    response_model=JobResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_job(
-    create_data: JobCreate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user),
-):
-    try:
-        uid = str(uuid.uuid4())
-        new_job = await crud_job.create(
-            db=db,
-            create_schema=JobCreateDB(
-                uid=uid,
-                author_id=current_user.id,
-                **create_data.model_dump(exclude_unset=True),
-            ),
-            commit=False,
-        )
-        await db.commit()
-    except Exception as ex:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while creating the job.",
-        ) from ex
-
-    return new_job
-
-
 @router.get(
     "/author/",
     response_model=List[JobResponse],
     status_code=status.HTTP_200_OK,
 )
+@cache(expire=60)
 async def get_author_jobs(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
@@ -69,6 +40,7 @@ async def get_author_jobs(
     response_model=List[JobResponse],
     status_code=status.HTTP_200_OK,
 )
+@cache(expire=60)
 async def get_performer_jobs(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
@@ -79,6 +51,7 @@ async def get_performer_jobs(
 
 
 @router.get("/all/", response_model=List[JobResponse])
+@cache(expire=60)
 async def get_all_jobs(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
@@ -106,6 +79,39 @@ async def get_job_by_uid(
         )
 
     return await crud_job.get_by_uid(db=db, uid=job_uid)
+
+
+@router.post(
+    "/",
+    response_model=JobResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_job(
+    create_data: JobCreate,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        uid = str(uuid.uuid4())
+        new_job = await crud_job.create(
+            db=db,
+            create_schema=JobCreateDB(
+                uid=uid,
+                author_id=current_user.id,
+                **create_data.model_dump(exclude_unset=True),
+            ),
+            commit=False,
+        )
+        await db.commit()
+    except Exception as ex:
+        await db.rollback()
+        logger.exception(ex)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while creating the job.",
+        ) from ex
+
+    return new_job
 
 
 @router.patch(
