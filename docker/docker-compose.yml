@@ -12,7 +12,7 @@ services:
     command: >
       sh -c " alembic -c src/alembic.ini upgrade head &&
              alembic -c src/alembic.ini stamp head &&
-             python src/main.py --reload"
+             python src/main.py"
     networks:
       - home
     env_file:
